@@ -1,33 +1,33 @@
----
+--- 
 apiVersion: apps/v1
 kind: Deployment
 metadata: 
   labels: 
-    app: myusers-app
-  name: myusers-app
+    app: myusersv2-app
+  name: myusersv2-app
 spec: 
   replicas: 1
   selector:
     matchLabels:
-      app: myusers-app
+      app: myusersv2-app
   template: 
     metadata: 
       labels: 
-        app: myusers-app
+        app: myusersv2-app
     spec: 
       containers: 
-        - name: myusers-app
-          image: gcr.io/qwiklabs-gcp-03-188f034d56f1/myusers-app:latest
+        - name: myusersv2-app
+          image: gcr.io/qwiklabs-gcp-03-188f034d56f1/myusersv2-app:latest
           imagePullPolicy: Always
           ports: 
             - containerPort: 8080
           env:
-            - name: DB_USERNAME
+            - name: DB_USER
               valueFrom:
                 secretKeyRef:
                   name: cloudsql-user-credentials
                   key: username
-            - name: DB_PASSWORD
+            - name: DB_PASS
               valueFrom:
                 secretKeyRef:
                   name: cloudsql-user-credentials
@@ -39,31 +39,56 @@ spec:
                   key: connection-name
             - name: DB_HOST
               valueFrom:
-                secretKeyRef:
-                  name: ip-credentials
-                  key: db_host
-           # - name: PROFILE
-              #valueFrom:
-                #configMapKeyRef:
-                  #name: mysqldb
-                  #key: profile                            
-        
+                configMapKeyRef:
+                  name: mysqldb
+                  key: connection-instance
+            - name: cloudsql-proxy
+          image: gcr.io/cloudsql-docker/gce-proxy:1.11
+          command: 
+           - "/cloud_sql_proxy"
+          # If connecting from a VPC-native GKE cluster, you can use the
+          # following flag to have the proxy connect over private IP
+          # - "-ip_address_types=PRIVATE"
+
+          # Replace DB_PORT with the port the proxy should listen on
+          # Defaults: MySQL: 3306, Postgres: 5432, SQLServer: 1433
+           - "-instances=qwiklabs-gcp-03-188f034d56f1:us-central1:mydb1=tcp:3306"
+
+        # [START cloud_sql_proxy_k8s_volume_mount]
+          # This flag specifies where the service account key can be found
+           - "-credential_file=/secrets/service_account.json"
+          securityContext:
+          # The default Cloud SQL proxy image runs as the
+          # "nonroot" user and group (uid: 65532) by default.
+          runAsNonRoot: true
+          volumeMounts:
+        - name: secrets-volume
+          mountPath: /secrets/
+          readOnly: true
+          # [END cloud_sql_proxy_k8s_volume_mount]
+      # [START cloud_sql_proxy_k8s_volume_secret]
+      volumes:
+      - name: secrets-volume
+        secret:
+          secretName: cloudsql-proxy-credentials
+      # [START cloud_sql_proxy_k8s_volume_secret]
 #---
 #kind: ConfigMap 
 #apiVersion: v1 
 #metadata:
-#  name: elastic-app 
+#  name: myusersv2-app 
 #data:
 #  database: marketplace
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: myusers-app
+  name: myusersv2-app
 spec:
   selector:
-    app: myusers-app
+    app: myusersv2-app
   ports:
-    - port: 8080
+    - port: 80
       targetPort: 8080
+      protocol: TCP
   type: LoadBalancer
