@@ -17,7 +17,7 @@ spec:
     spec: 
       containers: 
         - name: myusersv2-app
-          image: gcr.io/qwiklabs-gcp-03-188f034d56f1/myusersv2-app:latest
+          image: gcr.io/qwiklabs-gcp-02-563c2ddcb40b/myusersv2-app:latest
           imagePullPolicy: Always
           ports: 
             - containerPort: 8080
@@ -52,7 +52,7 @@ spec:
 
           # Replace DB_PORT with the port the proxy should listen on
           # Defaults: MySQL: 3306, Postgres: 5432, SQLServer: 1433
-           - "-instances=qwiklabs-gcp-03-188f034d56f1:us-central1:mydb1=tcp:3306"
+           - "-instances=qwiklabs-gcp-02-563c2ddcb40b:us-central1:mydb1=tcp:3306"
 
         # [START cloud_sql_proxy_k8s_volume_mount]
           # This flag specifies where the service account key can be found
