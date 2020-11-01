@@ -1,0 +1,69 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  labels: 
+    app: myusers-app
+  name: myusers-app
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myusers-app
+  template: 
+    metadata: 
+      labels: 
+        app: myusers-app
+    spec: 
+      containers: 
+        - name: myusers-app
+          image: gcr.io/qwiklabs-gcp-03-188f034d56f1/myusers-app:latest
+          imagePullPolicy: Always
+          ports: 
+            - containerPort: 8080
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cloudsql-user-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudsql-user-credentials
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mysqldb
+                  key: connection-name
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ip-credentials
+                  key: db_host
+           # - name: PROFILE
+              #valueFrom:
+                #configMapKeyRef:
+                  #name: mysqldb
+                  #key: profile                            
+        
+#---
+#kind: ConfigMap 
+#apiVersion: v1 
+#metadata:
+#  name: elastic-app 
+#data:
+#  database: marketplace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myusers-app
+spec:
+  selector:
+    app: myusers-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: LoadBalancer
